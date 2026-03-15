@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Winna Plinko Verification Tool — ProvablyFair.org</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.10.1/sha256.min.js"></script>
+<style>
+:root {
+  --bg: #0c0c14;
+  --surface: #131320;
+  --surface2: #1a1a2a;
+  --surface3: #222236;
+  --border: rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.12);
+  --text: #e8e8f0;
+  --text-dim: rgba(255,255,255,0.5);
+  --text-muted: rgba(255,255,255,0.25);
+  --accent: #e8590c;
+  --accent-hover: #ff6b1a;
+  --accent-glow: rgba(232,89,12,0.15);
+  --accent-dim: rgba(232,89,12,0.08);
+  --green: #22c55e;
+  --green-dim: rgba(34,197,94,0.10);
+  --green-border: rgba(34,197,94,0.25);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.10);
+  --red-border: rgba(239,68,68,0.25);
+  --orange: #f59e0b;
+  --orange-dim: rgba(245,158,11,0.10);
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --display: 'Plus Jakarta Sans', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+header::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 500px; height: 300px;
+  background: radial-gradient(ellipse, rgba(232,89,12,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.logo {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+h1 {
+  font-family: var(--display);
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.subtitle {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.warning-box {
+  background: var(--orange-dim);
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+  font-size: 0.78rem;
+  color: rgba(245,158,11,0.85);
+  line-height: 1.55;
+}
+
+.warning-box strong { color: #fbbf24; }
+
+.input-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.input-section h2 {
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+}
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.form-group.full { grid-column: 1 / -1; }
+
+label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+input, select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 0.85rem;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--surface3);
+}
+
+input::placeholder { color: var(--text-muted); }
+
+select { cursor: pointer; }
+select option { background: var(--surface2); }
+
+.nonce-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+button.verify-btn {
+  width: 100%;
+  padding: 0.9rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+button.verify-btn:hover { background: var(--accent-hover); box-shadow: 0 4px 20px var(--accent-glow); }
+button.verify-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+.results-section {
+  display: none;
+  margin-top: 1.5rem;
+}
+
+.results-section.visible { display: block; }
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.summary-card .label {
+  font-size: 0.65rem;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.summary-card .value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+
+.summary-card .sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.affected { border-color: var(--red-border); background: var(--red-dim); }
+.affected .value { color: var(--red); }
+
+.clean { border-color: var(--green-border); }
+.clean .value { color: var(--green); }
+
+.results-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.results-table-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.results-table-header h3 {
+  font-family: var(--display);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.filter-tab {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.filter-tab:hover { border-color: var(--border-hover); color: var(--text); }
+.filter-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.results-table th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.results-table td {
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  color: var(--text-dim);
+}
+
+.results-table tbody tr { transition: background 0.1s; }
+.results-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+.results-table tr.affected-row { background: var(--red-dim); }
+.results-table tr.affected-row:hover { background: rgba(239,68,68,0.15); }
+.results-table tr.affected-row td { color: var(--text); }
+
+.tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.tag-match { background: var(--green-dim); color: var(--green); }
+.tag-clipped { background: var(--red-dim); color: var(--red); }
+
+.impact-value { color: var(--red); font-weight: 600; }
+
+.progress-bar {
+  display: none;
+  margin-top: 1rem;
+  background: var(--surface2);
+  border-radius: 6px;
+  height: 3px;
+  overflow: hidden;
+}
+
+.progress-bar.visible { display: block; }
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+  transition: width 0.1s;
+  width: 0%;
+}
+
+.status-text {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  display: none;
+}
+
+.status-text.visible { display: block; }
+
+.methodology {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.methodology h3 {
+  font-family: var(--display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+.methodology code {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  background: var(--surface2);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .form-row, .nonce-row { grid-template-columns: 1fr; }
+  .summary-cards { grid-template-columns: 1fr; }
+  .results-table { font-size: 0.7rem; }
+  .results-table th, .results-table td { padding: 0.45rem 0.6rem; }
+  h1 { font-size: 1.3rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="logo">ProvablyFair.org</div>
+  <h1>Winna Plinko Verification Tool</h1>
+  <p class="subtitle">Compare your Plinko outcomes against fair binomial math. Enter your seed pair and nonce range to see if any results were affected by the December 17 – March 2026 probability modification.</p>
+</header>
+
+<div class="warning-box">
+  <strong>Affected period: December 17, 2025 – ~March 10, 2026.</strong> During this period, Winna's Plinko used hardcoded probability tables instead of standard binomial distribution. This tool compares what the modified code produced against what fair Plinko math should have produced. You need your <strong>unhashed server seed</strong> (available after seed rotation) and <strong>client seed</strong> from your Winna bet history.
+</div>
+
+<div class="input-section">
+  <h2>Enter Your Seeds</h2>
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Client Seed</label>
+      <input type="text" id="clientSeed" placeholder="e.g. bc0077399f741f4e44c0d257820c0b55aa64f5836ab69f598c876f14205eee2e">
+    </div>
+    <div class="form-group full">
+      <label>Server Seed (unhashed/revealed)</label>
+      <input type="text" id="serverSeed" placeholder="e.g. 5cecf5e69f10c072cc3753688f8c32a772afee990bce5095d2a5107839518958">
+    </div>
+    <div class="nonce-row">
+      <div class="form-group">
+        <label>Nonce Start</label>
+        <input type="number" id="nonceStart" value="1" min="0">
+      </div>
+      <div class="form-group">
+        <label>Nonce End</label>
+        <input type="number" id="nonceEnd" value="1000" min="1">
+      </div>
+      <div class="form-group">
+        <label>Difficulty</label>
+        <select id="difficulty">
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Pins</label>
+        <select id="pins">
+          <option value="16" selected>16</option>
+          <option value="15">15</option>
+          <option value="14">14</option>
+          <option value="13">13</option>
+          <option value="12">12</option>
+          <option value="11">11</option>
+          <option value="10">10</option>
+          <option value="9">9</option>
+          <option value="8">8</option>
+        </select>
+      </div>
+    </div>
+    <button class="verify-btn" id="verifyBtn" onclick="runVerification()">Verify Bets</button>
+    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="status-text" id="statusText"></div>
+  </div>
+</div>
+
+<div class="results-section" id="results">
+  <div class="summary-cards" id="summaryCards"></div>
+
+  <div class="input-section" style="margin-bottom:1rem; padding:1rem 1.25rem;">
+    <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+      <label style="margin:0; white-space:nowrap;">Your average bet size ($):</label>
+      <input type="number" id="betSize" value="1" min="0.01" step="0.01" style="width:120px;" onchange="updateDollarValues()">
+      <span id="dollarImpact" style="font-family:var(--mono); font-size:0.85rem; color:var(--red); font-weight:600;"></span>
+    </div>
+  </div>
+
+  <div id="multiplierBreakdown" class="input-section" style="margin-bottom:1rem; padding:1.25rem;"></div>
+
+  <div class="results-table-wrap">
+    <div class="results-table-header">
+      <h3>Bet Results</h3>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterResults('all', this)">All</button>
+        <button class="filter-tab" onclick="filterResults('affected', this)">Affected Only</button>
+        <button class="filter-tab" onclick="filterResults('highest', this)">Highest Impact</button>
+      </div>
+    </div>
+    <div style="max-height: 500px; overflow-y: auto;">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Nonce</th>
+            <th>Winna Result</th>
+            <th>Fair Result</th>
+            <th>Status</th>
+            <th>Impact (per $1)</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="methodology">
+  <h3>Methodology</h3>
+  <p>This tool implements two Plinko algorithms and compares their outputs for each nonce:</p>
+  <p><strong>Winna's algorithm (Dec 17 – Mar 2026):</strong> Generates a single float via <code>HMAC-SHA256(serverSeed, clientSeed:nonce:cursor)</code> and maps it against hardcoded probability tables. These tables were extracted from Winna's production JavaScript, independently archived by the Wayback Machine on January 27, 2026 (<code>-kePZzxf.chunk.js</code>).</p>
+  <p><strong>Fair binomial algorithm:</strong> Generates one float per pin row using the same HMAC byte generator, counts how many are ≥ 0.5 (equivalent to per-pin left/right coin flips). This produces the standard binomial distribution that all fair Plinko implementations use.</p>
+  <p>When the two algorithms produce different buckets for the same seed/nonce, the bet was affected. The impact shows the multiplier difference per $1 wagered.</p>
+</div>
+
+</div>
+
+<script>
+// Winna's probability tables (archived Jan 27, 2026 via Wayback Machine — -kePZzxf.chunk.js)
+// ALL 27 configurations: 3 difficulties × 9 pin counts (8-16)
+const WINNA_PROB = {
+  low: {
+    8: [0.0019762983, 0.03125, 0.109375, 0.21875, 0.2753674517, 0.21875, 0.109375, 0.03125, 0.00390625],
+    9: [0.0000096794, 0.017578125, 0.0703125, 0.1640625, 0.2481024752, 0.24609375, 0.1640625, 0.0703125, 0.017578125, 0.0018878454],
+    10: [0.0000096058, 0.009765625, 0.0439453125, 0.1171875, 0.205078125, 0.2472887575, 0.205078125, 0.1171875, 0.0439453125, 0.009765625, 0.0007485117],
+    11: [0.0000097792, 0.0042108638, 0.0268554687, 0.0805664063, 0.1611328125, 0.2277032498, 0.2255859375, 0.1611328125, 0.0805664063, 0.0268554687, 0.0053710938, 0.000009701],
+    12: [0.0000095805, 0.0007943749, 0.0161132813, 0.0537109375, 0.1208496094, 0.193359375, 0.2281902653, 0.193359375, 0.1208496094, 0.0537109375, 0.0161132813, 0.0029296875, 0.0000096856],
+    13: [0.000009887, 0.0000096514, 0.0095214844, 0.0349121094, 0.0872802734, 0.1571044922, 0.2122209395, 0.2094726562, 0.1571044922, 0.0872802734, 0.0349121094, 0.0095214844, 0.00064026, 0.000009887],
+    14: [0.0000096301, 0.0000098232, 0.0031181839, 0.0222167969, 0.0610961914, 0.1221923828, 0.1832885742, 0.2137007598, 0.1832885742, 0.1221923828, 0.0610961914, 0.0222167969, 0.0055541992, 0.0000098831, 0.0000096301],
+    15: [0.0000098735, 0.0000098868, 0.0019530623, 0.013885498, 0.0416564941, 0.0916442871, 0.1527404785, 0.1985689644, 0.1963806152, 0.1527404785, 0.0916442871, 0.0416564941, 0.013885498, 0.0032043457, 0.000009863, 0.0000098735],
+    16: [0.0000096168, 0.000009747, 0.0000095379, 0.0081408415, 0.0277709961, 0.0666503906, 0.1221923828, 0.1745605469, 0.2009074574, 0.1745605469, 0.1221923828, 0.0666503906, 0.0277709961, 0.0085449219, 0.0000097213, 0.0000099066, 0.0000096168],
+  },
+  medium: {
+    8: [0.0031870833, 0.03125, 0.109375, 0.21875, 0.2741566667, 0.21875, 0.109375, 0.03125, 0.00390625],
+    9: [0.0013013963, 0.017578125, 0.0703125, 0.1640625, 0.2467454787, 0.24609375, 0.1640625, 0.0703125, 0.017578125, 0.001953125],
+    10: [0.0005570486, 0.009765625, 0.0439453125, 0.1171875, 0.205078125, 0.2465132639, 0.205078125, 0.1171875, 0.0439453125, 0.009765625, 0.0009765625],
+    11: [0.0000528183, 0.0053710938, 0.0268554687, 0.0805664063, 0.1611328125, 0.2260214005, 0.2255859375, 0.1611328125, 0.0805664063, 0.0268554687, 0.0053710938, 0.0004882813],
+    12: [0.0000098832, 0.0029296875, 0.0161132813, 0.0537109375, 0.1208496094, 0.193359375, 0.2258884324, 0.193359375, 0.1208496094, 0.0537109375, 0.0161132813, 0.0029296875, 0.0001759032],
+    13: [0.0000099176, 0.0015561401, 0.0095214844, 0.0349121094, 0.0872802734, 0.1571044922, 0.209727671, 0.2094726562, 0.1571044922, 0.0872802734, 0.0349121094, 0.0095214844, 0.0015869141, 0.0000099822],
+    14: [0.0000097504, 0.0005829438, 0.0055541992, 0.0222167969, 0.0610961914, 0.1221923828, 0.1832885742, 0.2098466526, 0.1832885742, 0.1221923828, 0.0610961914, 0.0222167969, 0.0055541992, 0.0008544922, 0.000009872],
+    15: [0.0000098344, 0.0000985555, 0.0032043457, 0.013885498, 0.0416564941, 0.0916442871, 0.1527404785, 0.1967811592, 0.1963806152, 0.1527404785, 0.0916442871, 0.0416564941, 0.013885498, 0.0032043457, 0.0004577637, 0.000009865],
+    16: [0.0000099993, 0.0000299303, 0.0018310547, 0.0085449219, 0.0277709961, 0.0666503906, 0.1221923828, 0.1745605469, 0.1966054369, 0.1745605469, 0.1221923828, 0.0666503906, 0.0277709961, 0.0085449219, 0.0018310547, 0.0002441406, 0.0000099069],
+  },
+  high: {
+    8: [0.003537361, 0.03125, 0.109375, 0.21875, 0.273806389, 0.21875, 0.109375, 0.03125, 0.00390625],
+    9: [0.0017049006, 0.017578125, 0.0703125, 0.1640625, 0.2463419744, 0.24609375, 0.1640625, 0.0703125, 0.017578125, 0.001953125],
+    10: [0.0008364042, 0.009765625, 0.0439453125, 0.1171875, 0.205078125, 0.2462339083, 0.205078125, 0.1171875, 0.0439453125, 0.009765625, 0.0009765625],
+    11: [0.0003914485, 0.0053710938, 0.0268554687, 0.0805664063, 0.1611328125, 0.2256827703, 0.2255859375, 0.1611328125, 0.0805664063, 0.0268554687, 0.0053710938, 0.0004882813],
+    12: [0.0001784097, 0.0029296875, 0.0161132813, 0.0537109375, 0.1208496094, 0.1934251059, 0.2255859375, 0.193359375, 0.1208496094, 0.0537109375, 0.0161132813, 0.0029296875, 0.0002441406],
+    13: [0.0000802376, 0.0015869141, 0.0095214844, 0.0349121094, 0.0872802734, 0.1571463249, 0.2094726563, 0.2094726563, 0.1571044922, 0.0872802734, 0.0349121094, 0.0095214844, 0.0015869141, 0.0001220703],
+    14: [0.0000377343, 0.0008544922, 0.0055541992, 0.0222167969, 0.0610961914, 0.1221923828, 0.1833118751, 0.2094726562, 0.1832885742, 0.1221923828, 0.0610961914, 0.0222167969, 0.0055541992, 0.0008544922, 0.0000610352],
+    15: [0.0000139576, 0.0004577637, 0.0032043457, 0.013885498, 0.0416564941, 0.0916442871, 0.1527570385, 0.1963806152, 0.1963806152, 0.1527404785, 0.0916442871, 0.0416564941, 0.013885498, 0.0032043457, 0.0004577637, 0.0000305176],
+    16: [0.0000099831, 0.0002441406, 0.0018310547, 0.0085449219, 0.0277709961, 0.0666503906, 0.1222021482, 0.1745605469, 0.1963806152, 0.1745605469, 0.1221923828, 0.0666503906, 0.0277709961, 0.0085449219, 0.0018310547, 0.0002441406, 0.0000107691],
+  }
+};
+
+const PAYOUTS = {
+  low: {
+    8: [5.6, 2.1, 1.1, 1, 0.5, 1, 1.1, 2.1, 5.6],
+    9: [5.6, 2, 1.6, 1, 0.7, 0.7, 1, 1.6, 2, 5.6],
+    10: [8.9, 3, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 3, 8.9],
+    11: [8.4, 3, 1.9, 1.3, 1, 0.7, 0.7, 1, 1.3, 1.9, 3, 8.4],
+    12: [10, 3, 1.6, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 1.6, 3, 10],
+    13: [8.1, 4, 3, 1.9, 1.2, 0.9, 0.7, 0.7, 0.9, 1.2, 1.9, 3, 4, 8.1],
+    14: [7.1, 4, 1.9, 1.4, 1.3, 1.1, 1, 0.5, 1, 1.1, 1.3, 1.4, 1.9, 4, 7.1],
+    15: [15, 8, 3, 2, 1.5, 1.1, 1, 0.7, 0.7, 1, 1.1, 1.5, 2, 3, 8, 15],
+    16: [16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1, 0.5, 1, 1.1, 1.2, 1.4, 1.4, 2, 9, 16],
+  },
+  medium: {
+    8: [13, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 13],
+    9: [18, 4, 1.7, 0.9, 0.5, 0.5, 0.9, 1.7, 4, 18],
+    10: [22, 5, 2, 1.4, 0.6, 0.4, 0.6, 1.4, 2, 5, 22],
+    11: [24, 6, 3, 1.8, 0.7, 0.5, 0.5, 0.7, 1.8, 3, 6, 24],
+    12: [33, 11, 4, 2, 1.1, 0.6, 0.3, 0.6, 1.1, 2, 4, 11, 33],
+    13: [43, 13, 6, 3, 1.3, 0.7, 0.4, 0.4, 0.7, 1.3, 3, 6, 13, 43],
+    14: [58, 15, 7, 4, 1.9, 1, 0.5, 0.2, 0.5, 1, 1.9, 4, 7, 15, 58],
+    15: [88, 18, 11, 5, 3, 1.3, 0.5, 0.3, 0.3, 0.5, 1.3, 3, 5, 11, 18, 88],
+    16: [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110],
+  },
+  high: {
+    8: [29, 4, 1.5, 0.3, 0.2, 0.3, 1.5, 4, 29],
+    9: [43, 7, 2, 0.6, 0.2, 0.2, 0.6, 2, 7, 43],
+    10: [76, 10, 3, 0.9, 0.3, 0.2, 0.3, 0.9, 3, 10, 76],
+    11: [120, 14, 5.2, 1.4, 0.4, 0.2, 0.2, 0.4, 1.4, 5.2, 14, 120],
+    12: [170, 24, 8.1, 2, 0.7, 0.2, 0.2, 0.2, 0.7, 2, 8.1, 24, 170],
+    13: [260, 37, 11, 4, 1, 0.2, 0.2, 0.2, 0.2, 1, 4, 11, 37, 260],
+    14: [420, 56, 18, 5, 1.9, 0.3, 0.2, 0.2, 0.2, 0.3, 1.9, 5, 18, 56, 420],
+    15: [620, 83, 27, 8, 3, 0.5, 0.2, 0.2, 0.2, 0.2, 0.5, 3, 8, 27, 83, 620],
+    16: [1000, 130, 26, 9, 4, 2, 0.2, 0.2, 0.2, 0.2, 0.2, 2, 4, 9, 26, 130, 1000],
+  }
+};
+
+// HMAC-SHA256 byte generator using js-sha256
+function* byteGenerator(serverSeed, clientSeed, nonce) {
+  let cursor = 0;
+  while (true) {
+    const hmac = sha256.hmac.create(serverSeed);
+    hmac.update(`${clientSeed}:${nonce}:${cursor++}`);
+    const digest = hmac.digest();
+    for (let i = 0; i < 32; i++) yield digest[i];
+  }
+}
+
+function getFloats(serverSeed, clientSeed, nonce, count) {
+  const gen = byteGenerator(serverSeed, clientSeed, nonce);
+  const floats = [];
+  for (let f = 0; f < count; f++) {
+    const bytes = [];
+    for (let i = 0; i < 4; i++) bytes.push(gen.next().value);
+    floats.push(bytes.reduce((acc, b, i) => acc + b / Math.pow(256, i + 1), 0));
+  }
+  return floats;
+}
+
+function getFloat(serverSeed, clientSeed, nonce) {
+  return getFloats(serverSeed, clientSeed, nonce, 1)[0];
+}
+
+// Winna's bucket determination (single float → lookup table)
+function getWinnaBucket(serverSeed, clientSeed, nonce, pins, difficulty) {
+  const float = getFloat(serverSeed, clientSeed, nonce);
+  const probs = WINNA_PROB[difficulty]?.[pins];
+  if (!probs) return { bucket: -1, float };
+  let cumulative = 0;
+  for (let i = 0; i < probs.length; i++) {
+    cumulative += probs[i];
+    if (float < cumulative) return { bucket: i, float };
+  }
+  return { bucket: probs.length - 1, float };
+}
+
+// Fair binomial bucket determination (per-pin coin flip count)
+function getFairBucket(serverSeed, clientSeed, nonce, pins) {
+  const floats = getFloats(serverSeed, clientSeed, nonce, pins);
+  return floats.filter(f => f >= 0.5).length;
+}
+
+let allResults = [];
+
+async function runVerification() {
+  const serverSeed = document.getElementById('serverSeed').value.trim();
+  const clientSeed = document.getElementById('clientSeed').value.trim();
+  const nonceStart = parseInt(document.getElementById('nonceStart').value);
+  const nonceEnd = parseInt(document.getElementById('nonceEnd').value);
+  const difficulty = document.getElementById('difficulty').value;
+  const pins = parseInt(document.getElementById('pins').value);
+
+  if (!serverSeed || !clientSeed) {
+    alert('Please enter both server seed and client seed.');
+    return;
+  }
+  if (nonceEnd < nonceStart) {
+    alert('Nonce end must be greater than nonce start.');
+    return;
+  }
+  if (nonceEnd - nonceStart > 50000) {
+    alert('Maximum 50,000 nonces per verification. Please reduce your range.');
+    return;
+  }
+
+  const payouts = PAYOUTS[difficulty]?.[pins];
+  if (!payouts || !WINNA_PROB[difficulty]?.[pins]) {
+    alert('No probability tables available for this configuration.');
+    return;
+  }
+
+  const btn = document.getElementById('verifyBtn');
+  const bar = document.getElementById('progressBar');
+  const fill = document.getElementById('progressFill');
+  const status = document.getElementById('statusText');
+
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+  bar.classList.add('visible');
+  status.classList.add('visible');
+
+  allResults = [];
+  const total = nonceEnd - nonceStart + 1;
+  let affected = 0;
+  let totalImpact = 0;
+
+  // Process in chunks to keep UI responsive
+  const CHUNK = 100;
+  for (let i = nonceStart; i <= nonceEnd; i += CHUNK) {
+    const end = Math.min(i + CHUNK - 1, nonceEnd);
+
+    for (let nonce = i; nonce <= end; nonce++) {
+      const { bucket: winnaBucket } = getWinnaBucket(serverSeed, clientSeed, nonce, pins, difficulty);
+      const fairBucket = getFairBucket(serverSeed, clientSeed, nonce, pins);
+
+      const winnaMultiplier = payouts[winnaBucket] ?? 0;
+      const fairMultiplier = payouts[fairBucket] ?? 0;
+      const isAffected = winnaBucket !== fairBucket;
+      const impact = fairMultiplier - winnaMultiplier;
+
+      if (isAffected) {
+        affected++;
+        totalImpact += impact;
+      }
+
+      allResults.push({ nonce, winnaBucket, fairBucket, winnaMultiplier, fairMultiplier, isAffected, impact });
+    }
+
+    const progress = ((end - nonceStart + 1) / total) * 100;
+    fill.style.width = progress + '%';
+    status.textContent = `Processing nonce ${end.toLocaleString()} of ${nonceEnd.toLocaleString()}...`;
+
+    await new Promise(r => setTimeout(r, 0));
+  }
+
+  // Show results
+  btn.disabled = false;
+  btn.textContent = 'Verify Bets';
+  bar.classList.remove('visible');
+  status.classList.remove('visible');
+
+  renderSummary(total, affected, totalImpact);
+  renderTable('all');
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderSummary(total, affected, totalImpact) {
+  const pct = ((affected / total) * 100).toFixed(2);
+  const cards = document.getElementById('summaryCards');
+
+  // Calculate total payouts under both systems — this is the TRUE net difference
+  let winnaTotal = 0;
+  let fairTotal = 0;
+  allResults.forEach(r => {
+    winnaTotal += r.winnaMultiplier;
+    fairTotal += r.fairMultiplier;
+  });
+  const netDifference = fairTotal - winnaTotal;
+
+  cards.innerHTML = `
+    <div class="summary-card">
+      <div class="label">Bets Checked</div>
+      <div class="value">${total.toLocaleString()}</div>
+    </div>
+    <div class="summary-card ${affected > 0 ? 'affected' : 'clean'}">
+      <div class="label">Affected Bets</div>
+      <div class="value">${affected.toLocaleString()}</div>
+      <div class="sub">${pct}% of bets had different results</div>
+    </div>
+    <div class="summary-card ${netDifference > 0 ? 'affected' : 'clean'}">
+      <div class="label">Net Difference (per $1 bet)</div>
+      <div class="value">${netDifference > 0 ? '+' : ''}${netDifference.toFixed(2)}x</div>
+      <div class="sub">Total multiplier value owed</div>
+    </div>
+  `;
+
+  // Add the big P&L comparison box
+  // Remove old one if re-running
+  const oldPl = document.getElementById('plComparison');
+  if (oldPl) oldPl.remove();
+
+  const plBox = document.createElement('div');
+  plBox.id = 'plComparison';
+  plBox.className = 'input-section';
+  plBox.style.cssText = 'margin-top:1rem; margin-bottom:0; padding:1.25rem;';
+  plBox.innerHTML = `
+    <h2 style="font-size:0.875rem; font-weight:600; margin-bottom:1rem;">Total Payout Comparison</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; text-align:center;">
+      <div>
+        <div style="font-size:0.65rem; font-family:var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin-bottom:0.4rem;">You Received (Winna 98%)</div>
+        <div id="plWinna" style="font-size:1.3rem; font-weight:700; font-family:var(--mono); color:var(--text);">${winnaTotal.toFixed(2)}x</div>
+        <div id="plWinnaDollar" style="font-size:0.8rem; color:var(--text-dim); margin-top:0.2rem;"></div>
+      </div>
+      <div>
+        <div style="font-size:0.65rem; font-family:var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin-bottom:0.4rem;">You Should Have Received (Fair 99%)</div>
+        <div id="plFair" style="font-size:1.3rem; font-weight:700; font-family:var(--mono); color:var(--green);">${fairTotal.toFixed(2)}x</div>
+        <div id="plFairDollar" style="font-size:0.8rem; color:var(--text-dim); margin-top:0.2rem;"></div>
+      </div>
+      <div>
+        <div style="font-size:0.65rem; font-family:var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin-bottom:0.4rem;">Net Difference Owed</div>
+        <div id="plDiff" style="font-size:1.3rem; font-weight:700; font-family:var(--mono); color:${netDifference > 0 ? 'var(--red)' : 'var(--green)'};">${netDifference > 0 ? '+' : ''}${netDifference.toFixed(2)}x</div>
+        <div id="plDiffDollar" style="font-size:0.85rem; font-weight:700; color:${netDifference > 0 ? 'var(--red)' : 'var(--green)'}; margin-top:0.2rem;"></div>
+      </div>
+    </div>
+    <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--border); text-align:center;">
+      <span style="font-size:0.7rem; color:var(--text-muted);">RTP over ${total.toLocaleString()} bets — Winna: ${(winnaTotal / total * 100).toFixed(2)}% vs Fair: ${(fairTotal / total * 100).toFixed(2)}%</span>
+      <br><span style="font-size:0.65rem; color:var(--text-muted);">Theoretical RTP: Winna 98% vs Fair 99%. Observed values differ due to natural variance — high-risk Plinko requires millions of bets to converge. Your net difference reflects your actual outcomes with these specific seeds.</span>
+    </div>
+  `;
+  cards.after(plBox);
+
+  // Build multiplier hit comparison
+  const difficulty = document.getElementById('difficulty').value;
+  const pins = parseInt(document.getElementById('pins').value);
+  const payouts = PAYOUTS[difficulty]?.[pins] || [];
+
+  // Get unique multiplier values sorted high to low
+  const uniqueMultipliers = [...new Set(payouts)].sort((a, b) => b - a);
+
+  // Count hits for each multiplier under both systems
+  const winnaCounts = {};
+  const fairCounts = {};
+  uniqueMultipliers.forEach(m => { winnaCounts[m] = 0; fairCounts[m] = 0; });
+
+  allResults.forEach(r => {
+    winnaCounts[r.winnaMultiplier] = (winnaCounts[r.winnaMultiplier] || 0) + 1;
+    fairCounts[r.fairMultiplier] = (fairCounts[r.fairMultiplier] || 0) + 1;
+  });
+
+  // Show all multipliers with their net $ impact (positive = you're owed, negative = you got extra)
+  const breakdownRows = uniqueMultipliers
+    .filter(m => m >= 0.2 || winnaCounts[m] !== fairCounts[m])
+    .map(m => {
+      const diff = fairCounts[m] - winnaCounts[m];
+      // Net dollar impact for this multiplier: more fair hits = positive (owed), fewer = negative (got extra)
+      const netImpact = diff * m;
+      return { multiplier: m, winna: winnaCounts[m], fair: fairCounts[m], diff, netImpact };
+    });
+
+  // Remove old breakdown if re-running
+  const breakdown = document.getElementById('multiplierBreakdown');
+  breakdown.innerHTML = `
+    <h2 style="font-size:0.875rem; font-weight:600; margin-bottom:1rem;">Multiplier Hit Comparison</h2>
+    <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:1rem;">How many times each multiplier hit under Winna's modified code vs what fair Plinko math should have produced with the same seeds.</p>
+    <table class="results-table" style="margin:0;">
+      <thead>
+        <tr>
+          <th>Multiplier</th>
+          <th>Winna (98%)</th>
+          <th>Fair (99%)</th>
+          <th>Difference</th>
+          <th>Net $ Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${breakdownRows.map(r => {
+          const diffColor = r.diff > 0 ? 'var(--red)' : r.diff < 0 ? 'var(--green)' : 'var(--text-muted)';
+          const diffText = r.diff > 0 ? `+${r.diff} missed` : r.diff < 0 ? `${Math.abs(r.diff)} extra` : '—';
+          const betSize = parseFloat(document.getElementById('betSize')?.value || 1);
+          const dollarImpact = r.netImpact * betSize;
+          const impactColor = dollarImpact > 0.005 ? 'var(--red)' : dollarImpact < -0.005 ? 'var(--green)' : 'var(--text-muted)';
+          const impactText = Math.abs(dollarImpact) < 0.005 ? '—' : (dollarImpact > 0 ? '+' : '-') + '$' + Math.abs(dollarImpact).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          const rowClass = r.diff > 0 && r.multiplier >= 9 ? 'affected-row' : '';
+          return `
+            <tr class="${rowClass}">
+              <td style="font-weight:600; color:var(--text);">${r.multiplier}x</td>
+              <td>${r.winna.toLocaleString()} hits</td>
+              <td>${r.fair.toLocaleString()} hits</td>
+              <td style="color:${diffColor}; font-weight:600;">${diffText}</td>
+              <td style="color:${impactColor}; font-weight:600;" class="net-impact-cell" data-multiplier="${r.multiplier}">${impactText}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:0.75rem; color:var(--text-dim);">Net total owed (accounts for both gains and losses):</span>
+      <span id="totalOwed" style="font-family:var(--mono); font-size:1.1rem; font-weight:700; color:var(--red);"></span>
+    </div>
+  `;
+
+  updateDollarValues();
+}
+
+function updateDollarValues() {
+  const betSize = parseFloat(document.getElementById('betSize')?.value || 1);
+  if (!allResults.length) return;
+
+  // True net difference — sum all fair multipliers minus all winna multipliers
+  let winnaTotal = 0;
+  let fairTotal = 0;
+  allResults.forEach(r => {
+    winnaTotal += r.winnaMultiplier;
+    fairTotal += r.fairMultiplier;
+  });
+  const netDifference = fairTotal - winnaTotal;
+  const netDollar = netDifference * betSize;
+
+  const fmt = v => `$${v.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+  const owedEl = document.getElementById('totalOwed');
+  if (owedEl) owedEl.textContent = fmt(netDollar);
+
+  const impactEl = document.getElementById('dollarImpact');
+  if (impactEl) impactEl.textContent = netDollar > 0 ? `Net owed: ${fmt(netDollar)}` : '';
+
+  // Update P&L box
+  const plWinnaD = document.getElementById('plWinnaDollar');
+  const plFairD = document.getElementById('plFairDollar');
+  const plDiffD = document.getElementById('plDiffDollar');
+  if (plWinnaD) plWinnaD.textContent = fmt(winnaTotal * betSize);
+  if (plFairD) plFairD.textContent = fmt(fairTotal * betSize);
+  if (plDiffD) plDiffD.textContent = fmt(netDollar);
+
+  // Update net impact column in breakdown table
+  const difficulty = document.getElementById('difficulty').value;
+  const pins = parseInt(document.getElementById('pins').value);
+  const payouts = PAYOUTS[difficulty]?.[pins] || [];
+  const uniqueMultipliers = [...new Set(payouts)].sort((a, b) => b - a);
+
+  const winnaCounts = {};
+  const fairCounts = {};
+  uniqueMultipliers.forEach(m => { winnaCounts[m] = 0; fairCounts[m] = 0; });
+  allResults.forEach(r => {
+    winnaCounts[r.winnaMultiplier] = (winnaCounts[r.winnaMultiplier] || 0) + 1;
+    fairCounts[r.fairMultiplier] = (fairCounts[r.fairMultiplier] || 0) + 1;
+  });
+
+  document.querySelectorAll('.net-impact-cell').forEach(cell => {
+    const m = parseFloat(cell.dataset.multiplier);
+    const diff = (fairCounts[m] || 0) - (winnaCounts[m] || 0);
+    const dollarImpact = diff * m * betSize;
+    const impactColor = dollarImpact > 0.005 ? 'var(--red)' : dollarImpact < -0.005 ? 'var(--green)' : 'var(--text-muted)';
+    const impactText = Math.abs(dollarImpact) < 0.005 ? '—' : (dollarImpact > 0 ? '+' : '-') + '$' + Math.abs(dollarImpact).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    cell.style.color = impactColor;
+    cell.textContent = impactText;
+  });
+}
+
+function renderTable(filter) {
+  const tbody = document.getElementById('resultsBody');
+  let filtered;
+  if (filter === 'affected') {
+    filtered = allResults.filter(r => r.isAffected);
+  } else if (filter === 'highest') {
+    filtered = [...allResults].sort((a, b) => b.impact - a.impact).filter(r => r.isAffected);
+  } else {
+    filtered = allResults;
+  }
+
+  // Show all results — use chunked rendering for large sets
+  const CHUNK_SIZE = 2000;
+
+  if (filtered.length <= CHUNK_SIZE) {
+    tbody.innerHTML = filtered.map(r => `
+      <tr class="${r.isAffected ? 'affected-row' : ''}">
+        <td>${r.nonce.toLocaleString()}</td>
+        <td>${r.winnaMultiplier}x <span style="color:var(--text-muted)">(bucket ${r.winnaBucket})</span></td>
+        <td>${r.fairMultiplier}x <span style="color:var(--text-muted)">(bucket ${r.fairBucket})</span></td>
+        <td><span class="tag ${r.isAffected ? 'tag-clipped' : 'tag-match'}">${r.isAffected ? 'AFFECTED' : 'MATCH'}</span></td>
+        <td>${r.isAffected ? '<span class="impact-value">' + (r.impact > 0 ? '+' : '') + r.impact.toFixed(1) + 'x</span>' : '—'}</td>
+      </tr>
+    `).join('');
+  } else {
+    // Render first chunk immediately, then append rest progressively
+    let rendered = 0;
+    function renderChunk() {
+      const chunk = filtered.slice(rendered, rendered + CHUNK_SIZE);
+      const html = chunk.map(r => `
+        <tr class="${r.isAffected ? 'affected-row' : ''}">
+          <td>${r.nonce.toLocaleString()}</td>
+          <td>${r.winnaMultiplier}x <span style="color:var(--text-muted)">(bucket ${r.winnaBucket})</span></td>
+          <td>${r.fairMultiplier}x <span style="color:var(--text-muted)">(bucket ${r.fairBucket})</span></td>
+          <td><span class="tag ${r.isAffected ? 'tag-clipped' : 'tag-match'}">${r.isAffected ? 'AFFECTED' : 'MATCH'}</span></td>
+          <td>${r.isAffected ? '<span class="impact-value">' + (r.impact > 0 ? '+' : '') + r.impact.toFixed(1) + 'x</span>' : '—'}</td>
+        </tr>
+      `).join('');
+      tbody.insertAdjacentHTML('beforeend', html);
+      rendered += chunk.length;
+      if (rendered < filtered.length) {
+        requestAnimationFrame(renderChunk);
+      }
+    }
+    tbody.innerHTML = '';
+    renderChunk();
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--green);padding:2rem;">No affected bets found in this range. All results match fair binomial outcomes.</td></tr>`;
+  }
+}
+
+function filterResults(filter, el) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTable(filter);
+}
+</script>
+</body>
+</html>
