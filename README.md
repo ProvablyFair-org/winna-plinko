@@ -281,7 +281,7 @@ The tool implements two algorithms and compares their outputs for each nonce:
 ## Links
 
 - [ProvablyFair.org](https://provablyfair.org)
-- [X Thread](https://x.com/provaborlyfair)
+- [X Thread](https://x.com/provablyfairorg)
 - [Winna Incident Report (March 10, 2026)](https://winna.com)
 
 ## License
